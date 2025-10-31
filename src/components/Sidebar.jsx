@@ -27,6 +27,7 @@ export default function Sidebar({
   onAddRow,
   onRemoveRow,
   specialtyOptions,
+  surgeonOptions, // <-- NEW PROP RECEIVED
   activityData,
   icbPlanData,
   backlogData,
@@ -44,7 +45,7 @@ export default function Sidebar({
   uploadErrors,
   skippedCounts,
   isPapaReady,
-  onSetActiveTab, // <-- ACCEPTING THE PROP HERE
+  onSetActiveTab,
 }) {
   const isActivityLoaded = activityData.length > 0;
   const isDemandProfileLoaded = demandPlanData.length > 0;
@@ -85,6 +86,10 @@ export default function Sidebar({
           onRemoveRow={onRemoveRow}
           specialtyOptions={(specialtyOptions || []).filter(
             (s) => s !== "All Specialties" && s !== "Unknown"
+          )}
+          surgeonOptions={(surgeonOptions || []).filter(
+            // <-- NEW PROP PASSED
+            (s) => s !== "All Surgeons"
           )}
         />
       ) : (

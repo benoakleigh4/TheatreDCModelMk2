@@ -1,17 +1,17 @@
 import React from "react";
-import { List, User, MapPin } from "lucide-react"; // Import MapPin
-import InfoTooltip from "./InfoTooltip"; // Assuming InfoTooltip is available
+import { List, User, MapPin } from "lucide-react";
+import InfoTooltip from "./InfoTooltip";
 
 export default function Slicers({
   specialtyOptions,
   selectedSpecialty,
   onSpecialtyChange,
   surgeonOptions,
-  selectedSurgeons, // Now expects array
+  selectedSurgeons,
   onSurgeonChange,
-  siteOptions, // NEW PROP
-  selectedSite, // NEW PROP
-  onSiteChange, // NEW PROP
+  siteOptions,
+  selectedSites, // UPDATED: Was selectedSite
+  onSiteChange,
 }) {
   return (
     <div className="slicer-group">
@@ -73,7 +73,7 @@ export default function Slicers({
             <button
               key={site}
               className={`slicer-item ${
-                selectedSite === site ? "selected" : ""
+                selectedSites.includes(site) ? "selected" : "" // UPDATED
               }`}
               onClick={() => onSiteChange(site)}
             >
