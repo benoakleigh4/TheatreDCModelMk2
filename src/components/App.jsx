@@ -12,6 +12,8 @@ import ForecastTab from "./ForecastTab";
 import Sidebar from "./Sidebar";
 import GuidePanel from "./GuidePanel";
 import InfoTooltip from "./InfoTooltip";
+import AppTabs from "./AppTabs"; // <-- NEW IMPORT
+import ExecutiveSummaryTab from "./ExecutiveSummaryTab"; // <-- NEW IMPORT
 import { Info } from "lucide-react";
 
 import {
@@ -36,6 +38,7 @@ import {
 
 export default function App() {
   // --- Core State ---
+  const [appMode, setAppMode] = useState("mainTool"); // <-- NEW STATE
   const [activeMainTab, setActiveMainTab] = useState("wlAnalysis");
   const [activeSidebarTab, setActiveSidebarTab] = useState("rttTarget");
   const [isSandbox, setIsSandbox] = useState(true);
@@ -90,7 +93,7 @@ export default function App() {
   // --- Slicer State ---
   const [selectedSpecialty, setSelectedSpecialty] = useState("All Specialties");
   const [selectedSurgeons, setSelectedSurgeons] = useState(["All Surgeons"]);
-  const [selectedSite, setSelectedSite] = useState("All Sites"); // NEW STATE: Site Filter
+  const [selectedSites, setSelectedSites] = useState(["All Sites"]);
 
   // --- State Selectors ---
   const assumptions = isSandbox ? sandboxAssumptions : liveAssumptions;
@@ -186,21 +189,18 @@ export default function App() {
           .filter(Boolean)
           .filter((s) => s !== "Unknown")
       );
-      return ["All Surgeons", ...Array.from(surgeons).sort()];
+      return ["All Surgeons", ...Array.from(surgeons).sort(), "Unknown"];
     } catch (e) {
-      return ["All Surgeons"];
+      return ["All Surgeons", "Unknown"];
     }
   }, [timetableData, activityData, selectedSpecialty]);
 
-  // Dynamic Site Options
   const siteOptions = useMemo(() => {
     const sitesInUse = new Set(
       (timetableData || []).map((t) => t.site).filter(Boolean)
     );
 
-    // Combine sites in use with the static list to get a complete, sorted list
     const allSites = Array.from(new Set([...sitesInUse, ...siteOptionsStatic]));
-
     const sortedSites = allSites.sort();
 
     return ["All Sites", ...sortedSites];
@@ -212,7 +212,7 @@ export default function App() {
     const normalizedSelectedSpecialty = normalizeSpecialty(selectedSpecialty);
     const isAllSpecialties = selectedSpecialty === "All Specialties";
     const isAllSurgeons = selectedSurgeons.includes("All Surgeons");
-    const isAllSites = selectedSite === "All Sites";
+    const isAllSites = selectedSites.includes("All Sites");
 
     const filterBySpecialty = (item) =>
       isAllSpecialties ||
@@ -220,7 +220,8 @@ export default function App() {
     const filterBySurgeon = (item) =>
       isAllSurgeons ||
       selectedSurgeons.includes(normalizeSurgeon(item.surgeon));
-    const filterBySite = (item) => isAllSites || item.site === selectedSite;
+    const filterBySite = (item) =>
+      isAllSites || selectedSites.includes(item.site);
 
     const filteredTimetableData = timetableData
       .filter(filterBySpecialty)
@@ -688,7 +689,7 @@ export default function App() {
     demandPlanData,
     selectedSpecialty,
     selectedSurgeons,
-    selectedSite, // NEW DEPENDENCY
+    selectedSites, // UPDATED DEPENDENCY
     isSandbox,
     calcMode,
     viewMode,
@@ -812,9 +813,26 @@ export default function App() {
     });
   };
 
-  // NEW HANDLER: Site Change
+  // UPDATED: Site Change handler for multi-select
   const handleSiteChange = (site) => {
-    setSelectedSite(site);
+    setSelectedSites((prevSelected) => {
+      const isAllSelected =
+        prevSelected.length === 1 && prevSelected[0] === "All Sites";
+
+      if (site === "All Sites") {
+        return ["All Sites"];
+      }
+
+      if (prevSelected.includes(site)) {
+        const newSelection = prevSelected.filter(
+          (s) => s !== site && s !== "All Sites"
+        );
+        return newSelection.length === 0 ? ["All Sites"] : newSelection;
+      } else {
+        const newSelection = isAllSelected ? [site] : [...prevSelected, site];
+        return newSelection;
+      }
+    });
   };
 
   const handleExportErrorLog = (type) => {
@@ -1362,7 +1380,7 @@ export default function App() {
               })
               .filter(Boolean);
 
-            validRows = validatedData.length;
+            validRows = processedData.length;
             const finalAggregated = validatedData.reduce((acc, row) => {
               const key = `${row.specialty}|${row.weekIndex}`;
               if (!acc[key]) {
@@ -1432,170 +1450,189 @@ export default function App() {
 
       <Header onGuideClick={() => setShowGuide(true)} />
 
-      {/* UPDATED: Container now holds Toggles Bar */}
       <div className="container" style={{ paddingTop: "0" }}>
-        {/* Toggles Bar is now a standalone component inside the container */}
-        <TogglesBar
-          isSandbox={isSandbox}
-          onModeToggle={() => setIsSandbox(!isSandbox)}
-          viewMode={viewMode}
-          onViewToggle={() =>
-            setViewMode(viewMode === "cases" ? "hours" : "cases")
-          }
-          calcMode={calcMode}
-          onCalcModeToggle={() =>
-            setCalcMode(calcMode === "forecast" ? "target" : "forecast")
-          }
-          pathwayFilter={pathwayFilter}
-          onPathwayToggle={() =>
-            setPathwayFilter(pathwayFilter === "admitted" ? "all" : "admitted")
-          }
-        />
+        {/* UPDATED: This is the new AppTabs component */}
+        <AppTabs appMode={appMode} setAppMode={setAppMode} />
 
-        <div className="main-grid">
-          {/* --- Sidebar --- */}
-          <div className="sidebar">
-            {/* Slicers (Refactored to use Slicers component) */}
-            <Slicers
-              specialtyOptions={specialtyOptions}
-              selectedSpecialty={selectedSpecialty}
-              onSpecialtyChange={setSelectedSpecialty}
-              surgeonOptions={surgeonOptions}
-              selectedSurgeons={selectedSurgeons}
-              onSurgeonChange={handleSurgeonChange}
-              siteOptions={siteOptions}
-              selectedSite={selectedSite}
-              onSiteChange={handleSiteChange}
+        {/* UPDATED: Conditional Rendering for the two main app modes */}
+        {appMode === "mainTool" && (
+          <React.Fragment>
+            {/* Toggles Bar is now a standalone component inside the container */}
+            <TogglesBar
+              isSandbox={isSandbox}
+              onModeToggle={() => setIsSandbox(!isSandbox)}
+              viewMode={viewMode}
+              onViewToggle={() =>
+                setViewMode(viewMode === "cases" ? "hours" : "cases")
+              }
+              calcMode={calcMode}
+              onCalcModeToggle={() =>
+                setCalcMode(calcMode === "forecast" ? "target" : "forecast")
+              }
+              pathwayFilter={pathwayFilter}
+              onPathwayToggle={() =>
+                setPathwayFilter(
+                  pathwayFilter === "admitted" ? "all" : "admitted"
+                )
+              }
             />
-            {/* Config Panels - Use Sidebar Component */}
-            <div className="card">
-              <Sidebar
-                activeSidebarTab={activeSidebarTab}
-                setActiveSidebarTab={setActiveSidebarTab}
-                assumptions={assumptions}
-                onAssumptionChange={handleAssumptionChange}
-                timetableData={timetableData}
-                onTimetableChange={handleTimetableChange}
-                onAddRow={addTimetableRow}
-                onRemoveRow={removeTimetableRow}
-                specialtyOptions={specialtyOptions}
-                activityData={activityData}
-                icbPlanData={icbPlanData}
-                backlogData={backlogData}
-                demandPlanData={demandPlanData}
-                isSandbox={isSandbox}
-                historicalAvgCases={currentKpis?.avgCasesPerSession}
-                calcMode={calcMode}
-                // Data Management Props
-                onReset={resetSandbox}
-                onSave={saveSandboxToLive}
-                onFileUpload={handleFileUpload}
-                onClearData={clearData}
-                onExportErrorLog={handleExportErrorLog}
-                uploadErrors={uploadErrors}
-                skippedCounts={skippedCounts}
-                isPapaReady={isPapaReady}
-                onSetActiveTab={setActiveMainTab} // <-- PASSING THE CORRECT SETTER
-              />
-            </div>
-          </div>
 
-          {/* --- Main Content --- */}
-          <div className="main-content">
-            {/* UPDATED: KPI Panel is now wrapped in a card */}
-            <div className="card">
-              <KPIPanel
-                kpis={currentKpis}
-                calcMode={calcMode}
-                viewMode={viewMode}
-                TooltipComponent={InfoTooltip}
-              />
-            </div>
+            <div className="main-grid">
+              {/* --- Sidebar --- */}
+              <div className="sidebar">
+                {/* Slicers (Refactored to use Slicers component) */}
+                <Slicers
+                  specialtyOptions={specialtyOptions}
+                  selectedSpecialty={selectedSpecialty}
+                  onSpecialtyChange={setSelectedSpecialty}
+                  surgeonOptions={surgeonOptions}
+                  selectedSurgeons={selectedSurgeons}
+                  onSurgeonChange={handleSurgeonChange}
+                  siteOptions={siteOptions}
+                  selectedSites={selectedSites}
+                  onSiteChange={handleSiteChange}
+                />
+                {/* Config Panels - Use Sidebar Component */}
+                <div className="card">
+                  <Sidebar
+                    activeSidebarTab={activeSidebarTab}
+                    setActiveSidebarTab={setActiveSidebarTab}
+                    assumptions={assumptions}
+                    onAssumptionChange={handleAssumptionChange}
+                    timetableData={timetableData}
+                    onTimetableChange={handleTimetableChange}
+                    onAddRow={addTimetableRow}
+                    onRemoveRow={removeTimetableRow}
+                    specialtyOptions={specialtyOptions}
+                    surgeonOptions={surgeonOptions} // <-- Prop for surgeon dropdown
+                    activityData={activityData}
+                    icbPlanData={icbPlanData}
+                    backlogData={backlogData}
+                    demandPlanData={demandPlanData}
+                    isSandbox={isSandbox}
+                    historicalAvgCases={currentKpis?.avgCasesPerSession}
+                    calcMode={calcMode}
+                    // Data Management Props
+                    onReset={resetSandbox}
+                    onSave={saveSandboxToLive}
+                    onFileUpload={handleFileUpload}
+                    onClearData={clearData}
+                    onExportErrorLog={handleExportErrorLog}
+                    uploadErrors={uploadErrors}
+                    skippedCounts={skippedCounts}
+                    isPapaReady={isPapaReady}
+                    onSetActiveTab={setActiveMainTab}
+                  />
+                </div>
+              </div>
 
-            {/* Main Tabs (Inline in final version) */}
-            <div className="main-tabs">
-              <button
-                className={activeMainTab === "wlAnalysis" ? "active" : ""}
-                onClick={() => setActiveMainTab("wlAnalysis")}
-              >
-                WL Analysis
-              </button>
-              <button
-                className={activeMainTab === "wlCohort" ? "active" : ""}
-                onClick={() => setActiveMainTab("wlCohort")}
-              >
-                WL Cohorts
-              </button>
-              <button
-                className={activeMainTab === "summary" ? "active" : ""}
-                onClick={() => setActiveMainTab("summary")}
-              >
-                D&C Summary
-              </button>
-              <button
-                className={activeMainTab === "dataView" ? "active" : ""}
-                onClick={() => setActiveMainTab("dataView")}
-              >
-                Data View
-              </button>
-              <button
-                className={activeMainTab === "forecastTable" ? "active" : ""}
-                onClick={() => setActiveMainTab("forecastTable")}
-              >
-                Forecast Table
-              </button>
-            </div>
+              {/* --- Main Content --- */}
+              <div className="main-content">
+                {/* UPDATED: KPI Panel is now wrapped in a card */}
+                <div className="card">
+                  <KPIPanel
+                    kpis={currentKpis}
+                    calcMode={calcMode}
+                    viewMode={viewMode}
+                    TooltipComponent={InfoTooltip}
+                  />
+                </div>
 
-            {/* Tab Content */}
-            {activeMainTab === "wlAnalysis" && (
-              <WLAnalysisTab
-                data={currentForecastData}
-                timeframe={timeframe}
-                onTimeframeChange={setTimeframe}
-                rttTargetPercent={assumptions.rttTargetPercent}
-                calcMode={calcMode}
-                sustainableWlSize={currentKpis?.sustainableWlSize}
-                pathwayFilter={pathwayFilter}
-              />
-            )}
-            {activeMainTab === "wlCohort" && (
-              <WLCohortTab
-                data={currentForecastData}
-                timeframe={timeframe}
-                onTimeframeChange={setTimeframe}
-                pathwayFilter={pathwayFilter}
-              />
-            )}
-            {activeMainTab === "summary" && (
-              <SummaryTab
-                data={currentForecastData}
-                viewMode={viewMode}
-                calcMode={calcMode}
-                requiredActivity={currentKpis?.requiredActivity}
-                avgDemand={
-                  viewMode === "cases"
-                    ? currentKpis?.demandCases
-                    : currentKpis?.demandHours
-                }
-              />
-            )}
-            {activeMainTab === "dataView" && (
-              <DataViewTab
-                activityData={activityData}
-                icbPlanData={icbPlanData}
-                backlogData={backlogData}
-                demandPlanData={demandPlanData}
-              />
-            )}
-            {activeMainTab === "forecastTable" && (
-              <ForecastTab
-                data={currentForecastData}
-                viewMode={viewMode}
-                onExport={handleExport}
-              />
-            )}
-          </div>
-        </div>
+                {/* Main Tabs (Inline in final version) */}
+                <div className="main-tabs">
+                  <button
+                    className={activeMainTab === "wlAnalysis" ? "active" : ""}
+                    onClick={() => setActiveMainTab("wlAnalysis")}
+                  >
+                    WL Analysis
+                  </button>
+                  <button
+                    className={activeMainTab === "wlCohort" ? "active" : ""}
+                    onClick={() => setActiveMainTab("wlCohort")}
+                  >
+                    WL Cohorts
+                  </button>
+                  <button
+                    className={activeMainTab === "summary" ? "active" : ""}
+                    onClick={() => setActiveMainTab("summary")}
+                  >
+                    D&C Summary
+                  </button>
+                  <button
+                    className={activeMainTab === "dataView" ? "active" : ""}
+                    onClick={() => setActiveMainTab("dataView")}
+                  >
+                    Data View
+                  </button>
+                  <button
+                    className={
+                      activeMainTab === "forecastTable" ? "active" : ""
+                    }
+                    onClick={() => setActiveMainTab("forecastTable")}
+                  >
+                    Forecast Table
+                  </button>
+                </div>
+
+                {/* Tab Content */}
+                {activeMainTab === "wlAnalysis" && (
+                  <WLAnalysisTab
+                    data={currentForecastData}
+                    timeframe={timeframe}
+                    onTimeframeChange={setTimeframe}
+                    rttTargetPercent={assumptions.rttTargetPercent}
+                    calcMode={calcMode}
+                    sustainableWlSize={currentKpis?.sustainableWlSize}
+                    pathwayFilter={pathwayFilter}
+                  />
+                )}
+                {activeMainTab === "wlCohort" && (
+                  <WLCohortTab
+                    data={currentForecastData}
+                    timeframe={timeframe}
+                    onTimeframeChange={setTimeframe}
+                    pathwayFilter={pathwayFilter}
+                  />
+                )}
+                {activeMainTab === "summary" && (
+                  <SummaryTab
+                    data={currentForecastData}
+                    viewMode={viewMode}
+                    calcMode={calcMode}
+                    requiredActivity={currentKpis?.requiredActivity}
+                    avgDemand={
+                      viewMode === "cases"
+                        ? currentKpis?.demandCases
+                        : currentKpis?.demandHours
+                    }
+                  />
+                )}
+                {activeMainTab === "dataView" && (
+                  <DataViewTab
+                    activityData={activityData}
+                    icbPlanData={icbPlanData}
+                    backlogData={backlogData}
+                    demandPlanData={demandPlanData}
+                  />
+                )}
+                {activeMainTab === "forecastTable" && (
+                  <ForecastTab
+                    data={currentForecastData}
+                    viewMode={viewMode}
+                    onExport={handleExport}
+                  />
+                )}
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+
+        {appMode === "execSummary" && (
+          <ExecutiveSummaryTab
+            kpis={currentKpis}
+            rawForecastData={rawForecastData}
+          />
+        )}
       </div>
     </>
   );

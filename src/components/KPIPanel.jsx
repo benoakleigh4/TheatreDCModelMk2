@@ -13,40 +13,7 @@ import {
   Calendar,
   Users,
 } from "lucide-react";
-
-// KpiCard helper component (extracted from monolithic file)
-function KpiCard({
-  title,
-  value,
-  unit,
-  icon: Icon,
-  color,
-  textColor,
-  tooltipText,
-  TooltipComponent: InfoTooltip, // Receive the custom tooltip component
-}) {
-  // Format value: display one decimal unless >= 1000, then display zero decimals.
-  const formattedValue =
-    typeof value === "number" ? value.toFixed(value >= 1000 ? 0 : 1) : value;
-
-  return (
-    <div className="kpi-card">
-      <div className={`icon-kpi ${color}`}>
-        {Icon && <Icon size={24} className={textColor} />}
-      </div>
-      {/* This div contains the text content */}
-      <div>
-        <div className="text-sm">
-          {title}
-          {tooltipText && <InfoTooltip text={tooltipText} />}
-        </div>
-        {/* UPDATED: Value and Unit are now stacked */}
-        <h3 className="text-2xl">{formattedValue}</h3>
-        <div className="unit">{unit}</div>
-      </div>
-    </div>
-  );
-}
+import KpiCard from "./KpiCard"; // <-- IMPORT the refactored component
 
 export default function KPIPanel({
   kpis,
@@ -55,8 +22,6 @@ export default function KPIPanel({
   TooltipComponent,
 }) {
   if (!kpis) return null;
-
-  const Tooltip = TooltipComponent; // Use the passed component
 
   // --- Define Primary KPIs (Row 1) ---
   let primaryKpis = [];
@@ -258,20 +223,20 @@ export default function KPIPanel({
 
   // --- Combine all KPIs into one list ---
   let allKpis = [...primaryKpis];
-
+  
   if (kpis.isBacklogLoaded || kpis.isActivityLoaded) {
-    allKpis = [...allKpis, ...secondaryKpis];
+      allKpis = [...allKpis, ...secondaryKpis];
   }
 
   return (
     <>
       {/* Title is now outside the grid */}
       <h3 style={{ marginBottom: "1rem" }}>Key Performance Indicators</h3>
-
+      
       {/* A single grid now wraps all KPIs */}
       <div className="kpi-grid">
         {allKpis.map((kpi) => (
-          <KpiCard key={kpi.title} {...kpi} TooltipComponent={Tooltip} />
+          <KpiCard key={kpi.title} {...kpi} TooltipComponent={TooltipComponent} />
         ))}
       </div>
     </>

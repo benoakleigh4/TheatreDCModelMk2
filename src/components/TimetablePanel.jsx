@@ -1,6 +1,6 @@
 import React from "react";
-import { Plus, Trash2, ListChecks } from "lucide-react"; // Added ListChecks here
-import { siteOptions } from "../data/initialData"; // Ensure this path is correct
+import { Plus, Trash2, ListChecks } from "lucide-react";
+import { siteOptions } from "../data/initialData";
 
 export default function TimetablePanel({
   timetableData,
@@ -8,6 +8,7 @@ export default function TimetablePanel({
   onAddRow,
   onRemoveRow,
   specialtyOptions,
+  surgeonOptions, // <-- THIS IS THE PROP FOR THE SURGEON DROPDOWN
 }) {
   return (
     <div>
@@ -39,24 +40,27 @@ export default function TimetablePanel({
                       onTimetableChange(row.id, "specialty", e.target.value)
                     }
                   >
-                    {(specialtyOptions || [])
-                      .filter((s) => s !== "All Specialties")
-                      .map((spec) => (
-                        <option key={spec} value={spec}>
-                          {spec}
-                        </option>
-                      ))}
+                    {(specialtyOptions || []).map((spec) => (
+                      <option key={spec} value={spec}>
+                        {spec}
+                      </option>
+                    ))}
                   </select>
                 </td>
                 <td>
-                  <input
-                    type="text"
+                  {/* UPDATED: Changed from <input> to <select> */}
+                  <select
                     value={row.surgeon}
                     onChange={(e) =>
                       onTimetableChange(row.id, "surgeon", e.target.value)
                     }
-                    placeholder="Surgeon Name"
-                  />
+                  >
+                    {(surgeonOptions || []).map((surgeon) => (
+                      <option key={surgeon} value={surgeon}>
+                        {surgeon}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td>
                   <select
