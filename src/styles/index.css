@@ -1329,7 +1329,7 @@ td.numeric {
 .main-grid {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem; /* UPDATED: Removed top/bottom padding */
+  padding: 0 2rem 1.5rem 2rem; /* UPDATED: Added bottom padding */
 }
 /* UPDATED: Reverted to auto-fit with a smaller min-width */
 .kpi-grid {
@@ -1394,4 +1394,64 @@ td.numeric {
   background-color: #e0f2f1;
   color: #00796b;
   border-color: #00a499;
+}
+
+/* ==============================================
+ NEW STYLES FOR EXECUTIVE SUMMARY TAB
+==============================================
+*/
+
+/* --- Top Level App Tabs --- */
+.app-tabs-bar {
+  width: 100%;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  padding-top: 0.5rem;
+}
+.app-tabs-bar .container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  gap: 0.5rem;
+}
+.app-tabs-bar button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-bottom: 4px solid transparent;
+  background-color: transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.app-tabs-bar button:hover {
+  background-color: #f8fafc;
+}
+.app-tabs-bar button.active {
+  color: #00a499;
+  border-color: #00a499;
+}
+
+/* --- Executive Summary Grid --- */
+.exec-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem 1.5rem 2rem;
+}
+
+/* Responsive grid for summary tab */
+@media (max-width: 768px) {
+  .exec-summary-grid {
+    grid-template-columns: 1fr;
+  }
 }

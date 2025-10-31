@@ -27,7 +27,7 @@ export default function Sidebar({
   onAddRow,
   onRemoveRow,
   specialtyOptions,
-  surgeonOptions, // <-- NEW PROP RECEIVED
+  surgeonOptions, // <-- THIS IS THE PROP FOR THE SURGEON DROPDOWN
   activityData,
   icbPlanData,
   backlogData,
@@ -88,7 +88,7 @@ export default function Sidebar({
             (s) => s !== "All Specialties" && s !== "Unknown"
           )}
           surgeonOptions={(surgeonOptions || []).filter(
-            // <-- NEW PROP PASSED
+            // <-- PASSING IT
             (s) => s !== "All Surgeons"
           )}
         />

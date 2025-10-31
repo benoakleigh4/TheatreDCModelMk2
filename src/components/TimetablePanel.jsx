@@ -8,7 +8,7 @@ export default function TimetablePanel({
   onAddRow,
   onRemoveRow,
   specialtyOptions,
-  surgeonOptions, // <-- NEW PROP RECEIVED
+  surgeonOptions, // <-- THIS IS THE PROP FOR THE SURGEON DROPDOWN
 }) {
   return (
     <div>
