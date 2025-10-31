@@ -90,7 +90,7 @@ export default function App() {
   // --- Slicer State ---
   const [selectedSpecialty, setSelectedSpecialty] = useState("All Specialties");
   const [selectedSurgeons, setSelectedSurgeons] = useState(["All Surgeons"]);
-  const [selectedSite, setSelectedSite] = useState("All Sites"); // NEW STATE: Site Filter
+  const [selectedSites, setSelectedSites] = useState(["All Sites"]); // UPDATED: Was selectedSite
 
   // --- State Selectors ---
   const assumptions = isSandbox ? sandboxAssumptions : liveAssumptions;
@@ -186,21 +186,18 @@ export default function App() {
           .filter(Boolean)
           .filter((s) => s !== "Unknown")
       );
-      return ["All Surgeons", ...Array.from(surgeons).sort()];
+      return ["All Surgeons", ...Array.from(surgeons).sort(), "Unknown"];
     } catch (e) {
-      return ["All Surgeons"];
+      return ["All Surgeons", "Unknown"];
     }
   }, [timetableData, activityData, selectedSpecialty]);
 
-  // Dynamic Site Options
   const siteOptions = useMemo(() => {
     const sitesInUse = new Set(
       (timetableData || []).map((t) => t.site).filter(Boolean)
     );
 
-    // Combine sites in use with the static list to get a complete, sorted list
     const allSites = Array.from(new Set([...sitesInUse, ...siteOptionsStatic]));
-
     const sortedSites = allSites.sort();
 
     return ["All Sites", ...sortedSites];
@@ -212,7 +209,7 @@ export default function App() {
     const normalizedSelectedSpecialty = normalizeSpecialty(selectedSpecialty);
     const isAllSpecialties = selectedSpecialty === "All Specialties";
     const isAllSurgeons = selectedSurgeons.includes("All Surgeons");
-    const isAllSites = selectedSite === "All Sites";
+    const isAllSites = selectedSites.includes("All Sites"); // UPDATED
 
     const filterBySpecialty = (item) =>
       isAllSpecialties ||
@@ -220,7 +217,8 @@ export default function App() {
     const filterBySurgeon = (item) =>
       isAllSurgeons ||
       selectedSurgeons.includes(normalizeSurgeon(item.surgeon));
-    const filterBySite = (item) => isAllSites || item.site === selectedSite;
+    const filterBySite = (item) =>
+      isAllSites || selectedSites.includes(item.site); // UPDATED
 
     const filteredTimetableData = timetableData
       .filter(filterBySpecialty)
@@ -688,7 +686,7 @@ export default function App() {
     demandPlanData,
     selectedSpecialty,
     selectedSurgeons,
-    selectedSite, // NEW DEPENDENCY
+    selectedSites, // UPDATED DEPENDENCY
     isSandbox,
     calcMode,
     viewMode,
@@ -812,9 +810,26 @@ export default function App() {
     });
   };
 
-  // NEW HANDLER: Site Change
+  // UPDATED: Site Change handler for multi-select
   const handleSiteChange = (site) => {
-    setSelectedSite(site);
+    setSelectedSites((prevSelected) => {
+      const isAllSelected =
+        prevSelected.length === 1 && prevSelected[0] === "All Sites";
+
+      if (site === "All Sites") {
+        return ["All Sites"];
+      }
+
+      if (prevSelected.includes(site)) {
+        const newSelection = prevSelected.filter(
+          (s) => s !== site && s !== "All Sites"
+        );
+        return newSelection.length === 0 ? ["All Sites"] : newSelection;
+      } else {
+        const newSelection = isAllSelected ? [site] : [...prevSelected, site];
+        return newSelection;
+      }
+    });
   };
 
   const handleExportErrorLog = (type) => {
@@ -1432,7 +1447,6 @@ export default function App() {
 
       <Header onGuideClick={() => setShowGuide(true)} />
 
-      {/* UPDATED: Container now holds Toggles Bar */}
       <div className="container" style={{ paddingTop: "0" }}>
         {/* Toggles Bar is now a standalone component inside the container */}
         <TogglesBar
@@ -1464,7 +1478,7 @@ export default function App() {
               selectedSurgeons={selectedSurgeons}
               onSurgeonChange={handleSurgeonChange}
               siteOptions={siteOptions}
-              selectedSite={selectedSite}
+              selectedSites={selectedSites} // UPDATED
               onSiteChange={handleSiteChange}
             />
             {/* Config Panels - Use Sidebar Component */}
@@ -1479,6 +1493,7 @@ export default function App() {
                 onAddRow={addTimetableRow}
                 onRemoveRow={removeTimetableRow}
                 specialtyOptions={specialtyOptions}
+                surgeonOptions={surgeonOptions}
                 activityData={activityData}
                 icbPlanData={icbPlanData}
                 backlogData={backlogData}
@@ -1495,7 +1510,7 @@ export default function App() {
                 uploadErrors={uploadErrors}
                 skippedCounts={skippedCounts}
                 isPapaReady={isPapaReady}
-                onSetActiveTab={setActiveMainTab} // <-- PASSING THE CORRECT SETTER
+                onSetActiveTab={setActiveMainTab}
               />
             </div>
           </div>
